@@ -33,7 +33,7 @@ Switching models does not clear the cache. Use **Clear AI cache** if you want po
 ## Tuning
 
 - **Wrong decisions:** turn on "Label kept posts" in the popup. Every post then shows which category it got, which layer decided it (`keywords`, `nano`, `clef`, `groq`, `fallback`), and the classifier's confidence when it reported one (for example `opportunity · clef · 91%`). Fix bad keyword decisions in `src/content/keywords.js` and add a test case to `tests/keywords.test.js`. Run `npm test`.
-- **Clef accuracy:** run `node tests/clef_live.mjs` with `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` (or `CLOUDFLARE_API_KEY`) set, or in `.env`. It evaluates all three models against the English, Arabic, and recorded-feed cases without touching the extension cache.
+- **Clef accuracy:** run `node tests/clef_live.mjs` with `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` (or `CLOUDFLARE_API_KEY`) set in your environment. It evaluates both Clef models against the English, Arabic, and recorded-feed cases without touching the extension cache.
 - **Filter stopped working:** LinkedIn probably changed its markup. Save the feed page (Ctrl+S), run `python3 tests/saved_feed_check.py "Feed _ LinkedIn.html"` (needs Python Playwright), and update `src/content/selectors.js` until every post gets a state. The console also warns `[LIF] No post text found…` when the text selectors stop matching.
 - **LLM behavior:** edit the prompt in `src/shared/prompt.js`. Nano, Cloudflare, and Groq share it.
 

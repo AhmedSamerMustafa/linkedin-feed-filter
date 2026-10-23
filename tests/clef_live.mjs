@@ -1,19 +1,13 @@
 // Manual evaluation of the Cloudflare Clef models against the known cases.
 // Not part of `npm test`: it makes real API calls. Run it with:
 //   node tests/clef_live.mjs
-// Credentials come from the environment or the repo's .env file.
+// Credentials come from the process environment.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { CLEF_MODELS, classifyClef } from '../src/shared/clef.js';
 import { KEEP_CATEGORIES } from '../src/shared/prompt.js';
-
-try {
-  process.loadEnvFile(join(dirname(fileURLToPath(import.meta.url)), '..', '.env'));
-} catch {
-  // No .env file; fall back to the process environment.
-}
 
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 const apiKey = process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_KEY;
