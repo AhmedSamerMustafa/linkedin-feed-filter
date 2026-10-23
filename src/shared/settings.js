@@ -4,6 +4,10 @@ export const DEFAULT_SETTINGS = {
   showBadges: false, // label kept posts with their category, useful while tuning
   hidePromoted: true, // hide ads before any keyword or AI check
   useNano: true,
+  useClef: true,
+  cloudflareAccountId: '',
+  cloudflareApiKey: '',
+  clefModel: 'clef-flash',
   groqKey: '',
   groqModel: 'qwen/qwen3.8-27b', // fastest of the free models in testing; no reasoning tokens
   ambiguousPolicy: 'keep', // used only when no LLM is available and keywords are tied
