@@ -1,5 +1,6 @@
 (() => {
   const { classify: keywordClassify, isMostlyArabic, normalize } = LIF.keywords;
+  const { badgeLabel } = LIF.format;
   const SEL = LIF.selectors;
 
   const TEXT_WAIT_MS = 3000;
@@ -92,8 +93,9 @@
   }
 
   function render(post) {
-    const { lifState: state, lifCategory: category, lifSource: source } = post.dataset;
-    const label = [category, source].filter(Boolean).join(' · ');
+    const { lifState: state, lifCategory: category, lifSource: source, lifConfidence } = post.dataset;
+    const confidence = lifConfidence === undefined ? null : Number(lifConfidence);
+    const label = badgeLabel(category, source, confidence);
     if (state === 'pending') setBar(post, 'Checking post…');
     else if (state === 'hidden') {
       setBar(post, `Hidden: ${label}`, 'Show', () => {
@@ -108,7 +110,7 @@
     } else if (state === 'kept') setBar(post, `✓ ${label}`);
   }
 
-  function setState(post, state, category, source) {
+  function setState(post, state, category, source, confidence = null) {
     const prev = post.dataset.lifState;
     if (prev === 'pending') stats.pending--;
     if (state === 'pending') stats.pending++;
@@ -119,6 +121,8 @@
     post.dataset.lifState = state;
     if (category) post.dataset.lifCategory = category;
     if (source) post.dataset.lifSource = source;
+    if (confidence !== null && confidence !== undefined) post.dataset.lifConfidence = String(confidence);
+    else delete post.dataset.lifConfidence;
     render(post);
   }
 
@@ -171,7 +175,7 @@
     if (post.dataset.lifUrn !== (urn ?? '')) return; // element was reused while we waited
 
     if (res?.category) {
-      setState(post, res.keep ? 'kept' : 'hidden', res.category, res.source);
+      setState(post, res.keep ? 'kept' : 'hidden', res.category, res.source, res.confidence);
       return;
     }
     // No LLM available: go with whichever side the keywords leaned to.
