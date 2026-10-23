@@ -1,7 +1,10 @@
 // Receives ambiguous posts from the content script and runs them through the
-// LLM chain: Gemini Nano (local, free) → Groq (free tier) → give up.
+// LLM chain: Gemini Nano (local, free) → Cloudflare Clef (free tier) → Groq
+// (free tier) → give up.
 import { getSettings } from './shared/settings.js';
 import { KEEP_CATEGORIES, SYSTEM_PROMPT, parseCategory, prepareText } from './shared/prompt.js';
+import { classifyClef } from './shared/clef.js';
+import { clefBackoffUntil, providerOrder } from './shared/routing.js';
 
 const OFFSCREEN_URL = 'src/offscreen/offscreen.html';
 const NANO_RECHECK_MS = 5 * 60 * 1000;
@@ -41,6 +44,7 @@ async function toOffscreen(msg) {
 }
 
 let nanoStatus = null; // { availability, arabic, at }
+let clefBlockedUntil = 0; // Infinity when credentials are rejected; a timestamp when quota is exhausted
 
 async function getNanoStatus(force = false) {
   const fresh = nanoStatus && Date.now() - nanoStatus.at < NANO_RECHECK_MS;
@@ -131,32 +135,37 @@ function enqueue(fn) {
 async function runLLMChain(text, arabic) {
   const settings = await getSettings();
   const nano = settings.useNano ? await getNanoStatus() : null;
-  const nanoOk = nano?.availability === 'available';
+  const hasClef =
+    settings.useClef &&
+    Boolean(settings.cloudflareAccountId) &&
+    Boolean(settings.cloudflareApiKey) &&
+    Date.now() >= clefBlockedUntil;
   const hasGroq = Boolean(settings.groqKey);
 
-  // Nano first. Exception: Arabic posts go to Groq first when Nano lacks Arabic support.
-  const order = [];
-  if (nanoOk && (nano.arabic || !arabic || !hasGroq)) order.push('nano');
-  if (hasGroq) order.push('groq');
-  if (nanoOk && !order.includes('nano')) order.push('nano');
+  // Nano first. Exception: Arabic posts go to Clef/Groq first when Nano lacks Arabic support.
+  const order = providerOrder({ nanoStatus: nano, arabic, hasClef, hasGroq });
 
   for (const source of order) {
     try {
+      if (source === 'clef') {
+        return { ...(await classifyClef(text, settings)), source };
+      }
       const category = source === 'nano' ? await nanoClassify(text) : await groqClassify(text, settings);
-      if (category) return { category, source };
+      if (category) return { category, source, confidence: null };
     } catch (err) {
+      if (source === 'clef') clefBlockedUntil = Math.max(clefBlockedUntil, clefBackoffUntil(err));
       console.warn(`[LIF] ${source} failed`, err);
     }
   }
-  return { category: null, source: 'none' };
+  return { category: null, source: 'none', confidence: null };
 }
 
 async function classify({ key, text, arabic }) {
   const c = await loadCache();
   if (c.has(key)) return { ...c.get(key), cached: true };
 
-  const { category, source } = await enqueue(() => runLLMChain(prepareText(text), arabic));
-  const result = { category, keep: category ? KEEP_CATEGORIES.has(category) : null, source };
+  const { category, source, confidence = null } = await enqueue(() => runLLMChain(prepareText(text), arabic));
+  const result = { category, keep: category ? KEEP_CATEGORIES.has(category) : null, source, confidence };
   if (category) {
     c.set(key, result);
     saveCacheSoon();
