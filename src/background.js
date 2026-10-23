@@ -13,6 +13,7 @@ const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MIN_GAP_MS = 5000;
 const CACHE_KEY = 'llmCache';
 const CACHE_MAX = 1000;
+const CLEF_QUOTA_KEY = 'clefQuotaUntil';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -132,14 +133,16 @@ function enqueue(fn) {
   return run;
 }
 
-async function runLLMChain(text, arabic) {
+export async function runLLMChain(text, arabic) {
   const settings = await getSettings();
   const nano = settings.useNano ? await getNanoStatus() : null;
+  // The quota deadline outlives this service worker; credentials failures do not.
+  const storedQuotaUntil = Number((await chrome.storage.local.get(CLEF_QUOTA_KEY))[CLEF_QUOTA_KEY]) || 0;
   const hasClef =
     settings.useClef &&
     Boolean(settings.cloudflareAccountId) &&
     Boolean(settings.cloudflareApiKey) &&
-    Date.now() >= clefBlockedUntil;
+    Date.now() >= Math.max(clefBlockedUntil, storedQuotaUntil);
   const hasGroq = Boolean(settings.groqKey);
 
   // Nano first. Exception: Arabic posts go to Clef/Groq first when Nano lacks Arabic support.
@@ -153,7 +156,13 @@ async function runLLMChain(text, arabic) {
       const category = source === 'nano' ? await nanoClassify(text) : await groqClassify(text, settings);
       if (category) return { category, source, confidence: null };
     } catch (err) {
-      if (source === 'clef') clefBlockedUntil = Math.max(clefBlockedUntil, clefBackoffUntil(err));
+      if (source === 'clef') {
+        const until = clefBackoffUntil(err);
+        clefBlockedUntil = Math.max(clefBlockedUntil, until);
+        if (Number.isFinite(until) && until > 0) {
+          await chrome.storage.local.set({ [CLEF_QUOTA_KEY]: until });
+        }
+      }
       console.warn(`[LIF] ${source} failed`, err);
     }
   }
