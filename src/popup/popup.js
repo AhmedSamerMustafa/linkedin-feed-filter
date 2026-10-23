@@ -1,7 +1,11 @@
 import { getSettings } from '../shared/settings.js';
 
 const $ = (id) => document.getElementById(id);
-const FIELDS = ['enabled', 'hideMode', 'hidePromoted', 'showBadges', 'useNano', 'groqKey', 'groqModel', 'ambiguousPolicy'];
+const FIELDS = [
+  'enabled', 'hideMode', 'hidePromoted', 'showBadges',
+  'useNano', 'useClef', 'cloudflareAccountId', 'cloudflareApiKey', 'clefModel',
+  'groqKey', 'groqModel', 'ambiguousPolicy',
+];
 const NANO_OPTIONS = {
   expectedInputs: [{ type: 'text', languages: ['en'] }],
   expectedOutputs: [{ type: 'text', languages: ['en'] }],
