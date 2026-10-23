@@ -17,9 +17,10 @@ test('buildClefRequest creates a 7-option choice question', async () => {
 });
 
 test('resolveClefModel accepts known models and defaults unknown ones', async () => {
-  const { resolveClefModel } = await load();
-  assert.equal(resolveClefModel('clef-omni'), 'clef-omni');
+  const { CLEF_MODELS, resolveClefModel } = await load();
+  assert.deepEqual(CLEF_MODELS, ['clef-flash', 'clef']);
   assert.equal(resolveClefModel('clef'), 'clef');
+  assert.equal(resolveClefModel('clef-omni'), 'clef-flash');
   assert.equal(resolveClefModel('bogus'), 'clef-flash');
   assert.equal(resolveClefModel(undefined), 'clef-flash');
 });
@@ -83,7 +84,7 @@ test('classifyClef posts to the selected model and returns the parsed answer', a
   const result = await classifyClef('Join our webinar', {
     cloudflareAccountId: 'acc 1',
     cloudflareApiKey: 'tok',
-    clefModel: 'clef-omni',
+    clefModel: 'clef',
   });
 
   assert.deepEqual(result, {
@@ -91,9 +92,9 @@ test('classifyClef posts to the selected model and returns the parsed answer', a
     confidence: 0.8,
     probabilities: { event: 0.8 },
   });
-  assert.match(calls[0].url, /accounts\/acc%201\/ai\/run\/@cf\/cloudflare\/clef-omni$/);
+  assert.match(calls[0].url, /accounts\/acc%201\/ai\/run\/@cf\/cloudflare\/clef$/);
   assert.equal(calls[0].options.headers.Authorization, 'Bearer tok');
-  assert.equal(JSON.parse(calls[0].options.body).model, 'clef-omni');
+  assert.equal(JSON.parse(calls[0].options.body).model, 'clef');
 });
 
 test('classifyClef tags quota and auth errors', async (t) => {

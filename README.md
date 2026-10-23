@@ -27,7 +27,6 @@ Gemini Nano needs Chrome 138+, about 22 GB of free disk space, and either a GPU 
 
 - **Clef Flash** (default) — fast and the easiest on the 10,000 neurons/day free tier.
 - **Clef** — highest precision, slightly more expensive per call.
-- **Clef Omni** — multimodal; it accepts text fine but its audio/video support is unnecessary for this extension.
 
 Switching models does not clear the cache. Use **Clear AI cache** if you want posts reclassified by the new model.
 

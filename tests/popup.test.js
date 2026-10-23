@@ -22,3 +22,8 @@ test('popup FIELDS include the Cloudflare settings', () => {
     assert.match(js, new RegExp(`'${key}'`));
   }
 });
+
+test('popup offers only the supported Clef models', () => {
+  assert.match(html, /id="clefModel"/);
+  assert.doesNotMatch(html, /clef-omni/i);
+});

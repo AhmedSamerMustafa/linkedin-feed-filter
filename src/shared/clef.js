@@ -3,7 +3,7 @@
 
 import { CATEGORIES } from './prompt.js';
 
-export const CLEF_MODELS = ['clef-flash', 'clef', 'clef-omni'];
+export const CLEF_MODELS = ['clef-flash', 'clef'];
 export const DEFAULT_CLEF_MODEL = 'clef-flash';
 
 const CRITERIA = {
